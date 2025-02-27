@@ -1,0 +1,20 @@
+<table>
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Tipo</th>
+      <th>Fecha de Inicio</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let media of MediaFiles">
+      <td>{{media.fileName}}</td>
+      <td>{{media.fileType}}</td>
+      <td>{{media.uploadedAt}}</td>
+      <td>
+        <button (click)="deleteMediaFile(media.id)" class="btn btn-danger">Eliminar</button>
+      </td>
+    </tr>
+  </tbody>
+</table>

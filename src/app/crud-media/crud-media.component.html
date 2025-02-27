@@ -1,0 +1,274 @@
+<!-- Formulario de filtros y botones -->
+<form [formGroup]="form" class="container_general">
+  <div class="container_input">
+    <label> FECHA INICIO </label>
+    <p-calendar
+      formControlName="fechaInicio"
+      [showIcon]="true"
+      [showOnFocus]="false"
+      inputId="buttondisplay">
+    </p-calendar>
+  </div>
+
+  <div class="container_input">
+    <label> FECHA FIN </label>
+    <p-calendar
+      formControlName="fechaFin"
+      [showIcon]="true"
+      [showOnFocus]="false"
+      inputId="buttondisplay">
+    </p-calendar>
+  </div>
+
+
+
+  <div class="container_input">
+    <label> ESTADO </label>
+    <p-dropdown
+      [options]="estados"
+      formControlName="estado"
+      optionLabel="name_Tipo"
+      optionValue="cod_Tipo">
+    </p-dropdown>
+  </div>
+
+  <div class="container_input">
+    <label> TIPO ARCHIVO </label>
+    <p-dropdown
+      [options]="tiposArchivo"
+      formControlName="tipo"
+      optionLabel="name_Tipo"
+      optionValue="cod_Tipo">
+    </p-dropdown>
+  </div>
+
+  <div class="container_button">
+    <p-button label="BUSCAR" icon="pi pi-search" (onClick)="buscar()"></p-button>
+    <p-button label="NUEVO" icon="pi pi-plus" (onClick)="showDialog('N')"></p-button>
+  </div>
+</form>
+
+<div style="height: 40px;"></div>
+
+<!-- Tabla de resultados -->
+<p-table
+  [value]="mediaFiles"
+  [loading]="dataTableCarga"
+  class="p-datatable p-text-center"
+  [tableStyle]="{'min-width': '60rem'}"
+  [paginator]="true"
+  [rows]="5">
+
+  <!-- Cabecera -->
+  <ng-template pTemplate="header">
+    <tr>
+      <th class="text-center">Tienda</th>
+      <th class="text-center">Nombre Archivo</th>
+      <th class="text-center">Tipo de Archivo</th>
+      <th class="text-center">Fecha Inicio</th>
+      <th class="text-center">Fecha Fin</th>
+      <th class="text-center">Estado</th>
+      <th class="text-center">Acciones</th>
+    </tr>
+  </ng-template>
+
+  <!-- Cuerpo -->
+  <ng-template pTemplate="body" let-product>
+    <tr>
+      <td class="text-center">{{ product.storeName }}</td>
+      <td class="text-center">{{ product.fileName }}</td>
+      <td class="text-center">
+        <img
+          [src]="product.fileType === '001' ? '../../assets/imagen.webp' : '../../assets/video.png'"
+          [alt]="product.fileName"
+          width="60"
+          height="60"
+          class="shadow-4"/>
+      </td>
+      <td class="text-center">{{ product.startDate | date:'dd/MM/yyyy' }}</td>
+      <td class="text-center">{{ product.endDate | date:'dd/MM/yyyy' }}</td>
+      <td class="text-center">
+        <p-tag
+          [value]="product.isActive === '001' ? 'ACTIVO' : 'INACTIVO'"
+          [severity]="product.isActive === '001' ? 'success' : 'danger'">
+        </p-tag>
+      </td>
+      <td class="text-center" style="display: flex; justify-content: space-around;">
+        <p-button icon="pi pi-pencil"
+                  [rounded]="true"
+                  severity="warning"
+                  (onClick)="showDialog('E', product)"
+                  [outlined]="true">
+        </p-button>
+        <p-button icon="pi pi-trash"
+                  [rounded]="true"
+                  severity="danger"
+                  [outlined]="true"
+                  (onClick)="confirm2($event, product.id)">
+        </p-button>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<!-- Diálogo para vista previa del archivo (solo lectura) -->
+<p-dialog header="ARCHIVO" [modal]="true" [(visible)]="visibleFile" [style]="{ width: '50rem' }">
+  <div *ngIf="fileData">
+    <div *ngIf="isImage">
+      <img [src]="getImageSrc()"
+           alt="Imagen"
+           style="max-width: 100%; height: auto;" />
+    </div>
+    <div *ngIf="isVideo">
+      <video controls muted playsInline preload="auto" #videoPreview [src]="getVideoSrc()"
+             style="max-width: 100%; height: auto;">
+        Tu navegador no soporta video.
+      </video>
+    </div>
+  </div>
+  <div *ngIf="!fileData">
+    <p>No hay archivo para mostrar.</p>
+  </div>
+</p-dialog>
+
+<!-- Diálogo para agregar/editar un archivo -->
+<p-dialog header="Nuevo Archivo" [modal]="true" [(visible)]="visible" [style]="{ width: '50rem' }">
+  <span class="p-text-secondary block mb-5">Por favor, ingrese la información del archivo.</span>
+
+  <form [formGroup]="group_dialog" class="container_general_dialog">
+    <div class="container_group">
+      <div class="div_input">
+        <label for="nombreArchivo" class="p-col-12 p-md-3 font-semibold">Nombre del archivo</label>
+        <div class="p-col-12 p-md-9">
+          <input type="text" pInputText formControlName="nombreArchivo"/>
+        </div>
+      </div>
+
+      <div class="div_input">
+        <label for="tipoArchivo" class="p-col-12 p-md-3 font-semibold">Tipo de archivo</label>
+        <div class="p-col-12 p-md-9">
+          <p-dropdown
+            [options]="tiposArchivo"
+            optionLabel="name_Tipo"
+            optionValue="cod_Tipo"
+            formControlName="tipoArchivo">
+          </p-dropdown>
+        </div>
+      </div>
+
+      <div class="div_input" *ngIf="!archivoCargado">
+        <label for="fileData" class="p-col-12 p-md-3 font-semibold">Cargar archivo</label>
+        <div class="p-col-12 p-md-9">
+          <p-fileUpload
+            #fileUpload
+            mode="basic"
+            [chooseLabel]="labelArchivo"
+            chooseIcon="pi pi-upload"
+            name="demo[]"
+            accept="image/*,video/*"
+            [showUploadButton]="false"
+            (onSelect)="onFileSelect($event)">
+          </p-fileUpload>
+        </div>
+      </div>
+
+      <div class="div_input" *ngIf="archivoCargado">
+        <label for="fileData" class="p-col-12 p-md-3 font-semibold">Cargar archivo</label>
+        <div class="p-col-12 p-md-9">
+          <p-button label="CARGADO" icon="pi pi-check" class="p-button-sm"></p-button>
+          <p-button icon="pi pi-eye" [rounded]="true" class="p-button-sm" (onClick)="mostrarArchivo()"></p-button>
+          <div class="p-col-12 p-md-9">
+            <p-fileUpload
+              mode="basic"
+              [chooseLabel]="labelArchivo"
+              chooseIcon="pi pi-upload"
+              name="demo[]"
+              accept="image/*,video/*"
+              [showUploadButton]="false"
+              (onSelect)="onFileSelect($event)">
+            </p-fileUpload>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container_group">
+      <div class="div_input">
+        <label for="fechaInicio" class="p-col-12 p-md-3 font-semibold">Fecha de inicio</label>
+        <div>
+          <p-calendar
+            formControlName="fechaInicio"
+            [showIcon]="true"
+            [showOnFocus]="false"
+            inputId="buttondisplay"
+            appendTo="body">
+          </p-calendar>
+        </div>
+      </div>
+
+      <div class="div_input">
+        <label for="fechaFin">Fecha de fin</label>
+        <div>
+          <p-calendar
+            formControlName="fechaFin"
+            [showIcon]="true"
+            [showOnFocus]="false"
+            inputId="buttondisplay"
+            appendTo="body">
+          </p-calendar>
+        </div>
+      </div>
+    </div>
+
+    <div class="container_group">
+      <div class="div_input">
+        <label for="duracion" class="p-col-12 p-md-3 font-semibold">Tiempo en pantalla (segundos)</label>
+        <div class="p-col-12 p-md-9">
+          <input type="number" pInputText min="0" formControlName="duracion" />
+        </div>
+      </div>
+
+      <div class="div_input">
+        <label for="tienda" class="p-col-12 p-md-3 font-semibold">Tienda</label>
+        <div class="p-col-12 p-md-9">
+          <p-dropdown
+            [options]="tiendas"
+            optionLabel="storeName"
+            optionValue="id"
+            formControlName="tienda">
+          </p-dropdown>
+        </div>
+      </div>
+
+      <div class="div_input">
+        <label for="estado" class="p-col-12 p-md-3 font-semibold">Estado</label>
+        <div class="p-col-12 p-md-9">
+          <p-dropdown
+            [options]="estados"
+            optionLabel="name_Tipo"
+            optionValue="cod_Tipo"
+            formControlName="estado">
+          </p-dropdown>
+        </div>
+      </div>
+    </div>
+
+    <div class="container_buttons">
+      <p-button label="Cancelar" severity="secondary" icon="pi pi-times" (onClick)="visible = false" class="p-button-sm"></p-button>
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="saveMediaFile()" class="p-button-sm" *ngIf="group_dialog.get('nombreArchivo')?.value && !idFile"></p-button>
+      <p-button label="Actualizar" icon="pi pi-check" (onClick)="actualizarMediaFile()" class="p-button-sm" *ngIf="idFile"></p-button>
+    </div>
+  </form>
+</p-dialog>
+
+<p-toast position="top-right"></p-toast>
+<div *ngIf="isLoading" class="overlay">
+  <div class="spinner-container">
+    <p-progressSpinner></p-progressSpinner>
+    <p class="loading-text">Guardando archivo...</p>
+  </div>
+</div>
+
+<div class="card flex justify-content-center gap-2">
+  <p-confirmDialog></p-confirmDialog>
+</div>
