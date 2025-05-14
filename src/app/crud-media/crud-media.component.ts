@@ -71,6 +71,9 @@ export class CrudMediaComponent {
   duration: number | null = null;
   idFile = 0;
   dataTableCarga = false;
+  selectedFile: File | null = null; // 🔹 Agregado para almacenar el archivo seleccionado
+  fileUrl: string = ''; // 🔹 Nueva propiedad para almacenar la URL del archivo
+  filePath: string | undefined; // 🔹 Nueva propiedad para almacenar la ruta del archivo
 
   // Variables para listas y filtros
   tiendas: Store[] = [];
@@ -110,6 +113,7 @@ export class CrudMediaComponent {
 
   // Abre el diálogo de agregar/editar y carga datos si se pasa un producto
   showDialog(tipo: string, product?: any) {
+    console.log('Este es el resultado del producto', product);
     this.visible = true;
     if (tipo === 'E' && product) {
       this.idFile = product.id;
@@ -122,37 +126,26 @@ export class CrudMediaComponent {
         tienda: product.storeId,
         estado: product.isActive
       });
-      this.fileData = product.fileData;
-      this.archivoCargado = !!product.fileData;
+
+      // 🔹 Ahora usamos fileUrl en lugar de fileData
+      this.fileUrl = product.fileUrl;
+      console.log('Este es mi fileUrl', this.fileUrl);
+      this.archivoCargado = !!product.fileUrl;  // ✅ Nueva lógica
       this.fileName = product.fileName;
       this.tipoSeleccionado = product.fileType;
       this.isImage = product.fileType === '001';
       this.isVideo = product.fileType === '002';
+
       // Aseguramos el MIME type adecuado
       this.fileType = product.fileType === '001' ? 'image/png' : 'video/mp4';
-      if (this.fileData) {
-        try {
-          const decoded = atob(this.fileData);
-          const byteArray = new Uint8Array(decoded.length);
-          for (let i = 0; i < decoded.length; i++) {
-            byteArray[i] = decoded.charCodeAt(i);
-          }
-          this.fileBlob = new Blob([byteArray], { type: this.fileType });
-          this.previewUrl = URL.createObjectURL(this.fileBlob);
-        } catch (e) {
-          console.error('Error al decodificar Base64:', e);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'El archivo recibido del backend no es válido.',
-            life: 3000
-          });
-        }
+
+      if (this.fileUrl) {
+        this.previewUrl = this.fileUrl;  // ✅ Ahora simplemente usamos la URL
       }
     } else {
       this.reinicio();
     }
-  }
+}
 
   reinicio() {
     if (this.fileUpload) {
@@ -180,31 +173,16 @@ export class CrudMediaComponent {
       const file = event.files[0];
       const validTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/webm'];
       if (file && validTypes.includes(file.type)) {
-        this.fileBlob = file;
-        this.fileType = file.type; // Por ejemplo: "video/mp4"
+        this.fileBlob = file;  // 🔹 Ahora guardamos el archivo en fileBlob
+        this.fileType = file.type;
         this.fileName = file.name;
         this.labelArchivo = "CARGADO";
         this.archivoCargado = true;
+
         const tipoArchivo = file.type.startsWith('image') ? '001' : '002';
         this.group_dialog.patchValue({ tipoArchivo });
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          this.fileData = result.split(',')[1];
-        };
-        reader.onerror = () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo leer el archivo.',
-            life: 3000
-          });
-          this.fileUpload?.clear();
-        };
-        reader.readAsDataURL(file);
 
         if (file.type.startsWith('video/')) {
-          // Se crea una URL del Blob y se carga para obtener metadatos
           const url = URL.createObjectURL(file);
           const video = document.createElement('video');
           video.src = url;
@@ -213,17 +191,6 @@ export class CrudMediaComponent {
             this.group_dialog.patchValue({ duracion: Math.round(video.duration) });
             this.previewUrl = url;
             this.cdr.detectChanges();
-          };
-          video.onerror = () => {
-            console.error('Error al verificar el video');
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'El video no es válido o su formato no es soportado.',
-              life: 3000
-            });
-            this.fileUpload?.clear();
-            URL.revokeObjectURL(url);
           };
         } else if (file.type.startsWith('image/')) {
           this.previewUrl = URL.createObjectURL(file);
@@ -257,7 +224,7 @@ export class CrudMediaComponent {
 
   // Muestra el diálogo de vista previa (sin descarga)
   mostrarArchivo() {
-    if (!this.fileBlob) {
+    if (!this.fileUrl) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
@@ -266,19 +233,16 @@ export class CrudMediaComponent {
       });
       return;
     }
+
     const tipoArchivo = this.group_dialog.get('tipoArchivo')?.value;
     if (tipoArchivo === '001') {
       this.isImage = true;
       this.isVideo = false;
-      if (!this.previewUrl) {
-        this.previewUrl = URL.createObjectURL(this.fileBlob);
-      }
+      this.previewUrl = this.fileUrl;  // ✅ Usamos directamente la URL
     } else if (tipoArchivo === '002') {
       this.isImage = false;
       this.isVideo = true;
-      if (!this.previewUrl) {
-        this.previewUrl = URL.createObjectURL(this.fileBlob);
-      }
+      this.previewUrl = this.fileUrl;  // ✅ Usamos directamente la URL
     } else {
       this.messageService.add({
         severity: 'warn',
@@ -288,12 +252,15 @@ export class CrudMediaComponent {
       });
       return;
     }
-    this.visibleFile = true;
-    this.cdr.detectChanges();
 
-    // Si es video, se asigna la URL y se reproduce en el elemento referenciado
+    this.visibleFile = true;
+    this.cdr.detectChanges(); // 🔹 Refrescamos la vista en caso de que Angular no detecte cambios automáticamente
+
+    // 🔹 Si es video, asignamos la URL directamente y lo reproducimos
+    //https://localhost:7154
+    //https://servicios.impuls.com.mx:449/tiendasbannerApiTest
     if (this.isVideo && this.videoPreview) {
-      this.videoPreview.nativeElement.src = this.previewUrl;
+      this.videoPreview.nativeElement.src = this.previewUrl.replace('https://localhost:7154', 'https://servicios.impuls.com.mx:449/tiendasbannerApiTest');
       this.videoPreview.nativeElement.load();
       this.videoPreview.nativeElement.play().catch(error => {
         console.error('Error al reproducir el video:', error);
@@ -305,7 +272,7 @@ export class CrudMediaComponent {
         });
       });
     }
-  }
+}
 
   onImageError(event: Event) {
     console.error('Error al cargar la imagen:', event);
@@ -336,14 +303,14 @@ export class CrudMediaComponent {
       p_end_date: values.fechaFin,
       p_is_active: values.estado,
       p_file_type: values.tipo,
-      p_store_: values.tienda // Se incluye la propiedad obligatoria
+      // p_store_: values.tienda // Se incluye la propiedad obligatoria
     };
     this.service.getMediaFilter(requestMediaFile).subscribe({
       next: (data) => {
         this.mediaFiles = data;
         this.dataTableCarga = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('ERROR:', error);
         this.dataTableCarga = false;
       }
@@ -353,7 +320,9 @@ export class CrudMediaComponent {
   getAllMedia() {
     this.dataTableCarga = true;
     this.service.getAllMedia().subscribe({
+      //https://servicios.impuls.com.mx:449/tiendasbannerApiTest
       next: (data) => {
+        console.log('Este es el resultado de getAllMedia', data);
         this.mediaFiles = data;
         this.dataTableCarga = false;
       },
@@ -388,17 +357,28 @@ export class CrudMediaComponent {
   saveMediaFile() {
     this.isLoading = true;
     const values = this.group_dialog.value;
-    const requestMediaInsert: InsertMediaFile = {
-      FileName: values.nombreArchivo,
-      FileType: values.tipoArchivo,
-      FileData: this.fileData,
-      Duration: values.duracion,
-      StartDate: values.fechaInicio,
-      EndDate: values.fechaFin,
-      StoreId: values.tienda,
-      IsActive: values.estado
-    };
-    this.service.insertMediaFiles(requestMediaInsert).subscribe({
+
+    if (!this.fileBlob) {  // 🔹 Ahora usamos this.fileBlob
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Debes seleccionar un archivo antes de guardar.',
+        life: 3000
+      });
+      this.isLoading = false;
+      return;
+    }
+    const formData = new FormData();
+    formData.append('OriginalFileName', values.nombreArchivo);
+    formData.append('FileType', values.tipoArchivo);
+    formData.append('Duration', values.duracion.toString());
+    formData.append('StartDate', values.fechaInicio.toISOString());
+    formData.append('EndDate', values.fechaFin.toISOString());
+    formData.append('StoreId', values.tienda.toString());
+    formData.append('IsActive', values.estado);
+    formData.append('UploadFile', this.fileBlob);
+
+    this.service.insertMediaFiles(formData).subscribe({
       next: (data) => {
         if (data.status === 'OK') {
           this.reinicio();
@@ -419,7 +399,7 @@ export class CrudMediaComponent {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: error,
+          detail: error.error.detail || 'No se pudo guardar el archivo.',
           life: 3000
         });
       }
@@ -427,43 +407,50 @@ export class CrudMediaComponent {
   }
 
   actualizarMediaFile() {
+
     this.isLoading = true;
     const values = this.group_dialog.value;
-    const requestMediaUpdate: UpdateMediaFile = {
-      Id: this.idFile,
-      FileName: values.nombreArchivo,
-      FileType: values.tipoArchivo,
-      FileData: this.fileData,
-      Duration: values.duracion,
-      StartDate: values.fechaInicio,
-      EndDate: values.fechaFin,
-      StoreId: values.tienda,
-      IsActive: values.estado
-    };
-    this.service.updateMediaFile(requestMediaUpdate).subscribe({
-      next: (data) => {
-        if (data.status === 'OK') {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Archivo Actualizado',
-            detail: 'El archivo se actualizó correctamente.',
-            life: 3000
-          });
-          this.isLoading = false;
-          this.visible = false;
-          this.reinicio();
-          this.getAllMedia();
+    const formData = new FormData();
+
+    formData.append('Id', this.idFile.toString());
+    formData.append('OriginalFileName', values.nombreArchivo);
+    formData.append('FileType', values.tipoArchivo);
+    formData.append('Duration', values.duracion.toString());
+    formData.append('StartDate', values.fechaInicio.toISOString());
+    formData.append('EndDate', values.fechaFin.toISOString());
+    formData.append('StoreId', values.tienda.toString());
+    formData.append('IsActive', values.estado);
+
+    if (this.fileBlob) {
+        formData.append('FileData', this.fileBlob);
+    }
+
+    formData.append('FilePath', this.fileUrl);
+
+    this.service.updateMediaFile(formData).subscribe({
+        next: (data) => {
+            if (data.status === 'OK') {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Archivo Actualizado',
+                    detail: 'El archivo se actualizó correctamente.',
+                    life: 3000
+                });
+                this.isLoading = false;
+                this.visible = false;
+                this.reinicio();
+                this.getAllMedia();
+            }
+        },
+        error: (error) => {
+            console.error('Error al actualizar el archivo:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se actualizó el archivo',
+                life: 3000
+            });
         }
-      },
-      error: (error) => {
-        console.error('Error al actualizar el archivo:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se actualizó el archivo',
-          life: 3000
-        });
-      }
     });
   }
 

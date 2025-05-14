@@ -4,16 +4,16 @@
 export interface MediaFile {
   id: number;
   fileName: string;
-  fileType: string; // Corregido
-  fileData: string;
+  fileType: string;
+  fileUrl: string; // 🔹 Nueva propiedad con la URL accesible del archivo
   duration: number;
   startDate: Date;
   endDate: Date;
   storeId: number;
-  storeName:string;
+  storeName: string;
   isActive: string;
-  createdAt: Date,
-  updatedAt: Date
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 
@@ -28,16 +28,15 @@ export interface InsertMediaFile{
   IsActive:string
 }
 
-export interface UpdateMediaFile{
-  Id:number // Primary Key
-  FileName:string
-  FileType:string
-  FileData:string
-  Duration:number
-  StartDate:Date
-  EndDate:Date
-  StoreId:number
-  IsActive:string
+export interface UpdateMediaFile {
+  Id: number; // Primary Key
+  FileName: string;
+  FileType: string;
+  Duration: number;
+  StartDate: Date;
+  EndDate: Date;
+  StoreId: number;
+  IsActive: string;
 }
 
 
@@ -74,5 +73,5 @@ export interface GetMediaFilter {
   p_end_date: string | null;
   p_is_active: string;
   p_file_type: string;
-  p_store_: number | null;
+  // p_store_: number | null;
 }

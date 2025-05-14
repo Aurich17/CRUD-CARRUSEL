@@ -27,7 +27,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 const routes: Routes = [
   // { path: 'media-form', component: MediaFormComponent },
   // { path: 'media-list', component: MediaListComponent },
-  { path: '', redirectTo: '/media-list', pathMatch: 'full' }
+  // { path: '', redirectTo: '/media-list', pathMatch: 'full' }
 ];
 
 export const appConfig: ApplicationConfig = {

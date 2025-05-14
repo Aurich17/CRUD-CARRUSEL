@@ -28,7 +28,8 @@
       [options]="estados"
       formControlName="estado"
       optionLabel="name_Tipo"
-      optionValue="cod_Tipo">
+      optionValue="cod_Tipo"
+      label="Seleccione Estado">
     </p-dropdown>
   </div>
 
@@ -113,23 +114,24 @@
 
 <!-- Diálogo para vista previa del archivo (solo lectura) -->
 <p-dialog header="ARCHIVO" [modal]="true" [(visible)]="visibleFile" [style]="{ width: '50rem' }">
-  <div *ngIf="fileData">
+  <div *ngIf="fileUrl">
     <div *ngIf="isImage">
-      <img [src]="getImageSrc()"
+      <img [src]="fileUrl"
            alt="Imagen"
            style="max-width: 100%; height: auto;" />
     </div>
     <div *ngIf="isVideo">
-      <video controls muted playsInline preload="auto" #videoPreview [src]="getVideoSrc()"
+      <video controls muted playsInline preload="auto" #videoPreview [src]="fileUrl"
              style="max-width: 100%; height: auto;">
         Tu navegador no soporta video.
       </video>
     </div>
   </div>
-  <div *ngIf="!fileData">
+  <div *ngIf="!fileUrl">
     <p>No hay archivo para mostrar.</p>
   </div>
 </p-dialog>
+
 
 <!-- Diálogo para agregar/editar un archivo -->
 <p-dialog header="Nuevo Archivo" [modal]="true" [(visible)]="visible" [style]="{ width: '50rem' }">

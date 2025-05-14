@@ -17,21 +17,21 @@ export class MediaListComponent implements OnInit {
   constructor(private mediaService: MediaService) {}
 
   ngOnInit(): void {
-    this.loadMediaFiles();
+    // this.loadMediaFiles();
   }
 
-  loadMediaFiles(): void {
-    this.mediaService.getMediaFiles().subscribe((data) => {
-      this.MediaFiles = data;
-    });
-  }
+  // loadMediaFiles(): void {
+  //   this.mediaService.getMediaFiles().subscribe((data) => {
+  //     this.MediaFiles = data;
+  //   });
+  // }
 
-  deleteMediaFile(id: number): void {
-    if (confirm('¿Estás seguro que quieres eliminar este archivo?')) {
-      this.mediaService.deleteMediaFile(id).subscribe(() => {
-        this.loadMediaFiles();
-      });
-    }
-  }
+  // deleteMediaFile(id: number): void {
+  //   if (confirm('¿Estás seguro que quieres eliminar este archivo?')) {
+  //     this.mediaService.deleteMediaFile(id).subscribe(() => {
+  //       this.loadMediaFiles();
+  //     });
+  //   }
+  // }
 
 }

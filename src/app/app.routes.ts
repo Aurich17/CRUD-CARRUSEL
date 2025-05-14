@@ -24,7 +24,7 @@ import { RouterModule, Routes } from '@angular/router';
 const routes: Routes = [
   // { path: 'media-form', component: MediaFormComponent },
   // { path: 'media-list', component: MediaListComponent },
-  { path: '', redirectTo: '/media-list', pathMatch: 'full' }
+  // { path: '', redirectTo: '/media-list', pathMatch: 'full' }
 ];
 
 @NgModule({

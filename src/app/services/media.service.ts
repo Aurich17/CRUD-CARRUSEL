@@ -16,8 +16,8 @@ export class MediaService {
   constructor(private http: HttpClient) {}
 
   // Obtener los archivos multimedia
-  insertMediaFiles(request: InsertMediaFile): Observable<any> {
-    return this.http.post(`${this.apiUrl}api/InsertMediaFile`, request);
+  insertMediaFiles(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}api/InsertMediaFile`, formData);
   }
 
   getStores(): Observable<Store[]> {
@@ -32,8 +32,8 @@ export class MediaService {
     return this.http.post<TiposResponse[]>(`${this.apiUrl}api/GetTipos`, request);
   }
 
-  updateMediaFile(request: UpdateMediaFile): Observable<any> {
-    return this.http.post(`${this.apiUrl}api/UpdateMediaFile`, request);
+  updateMediaFile(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}api/UpdateMediaFile`, formData);
   }
 
 
